@@ -1,0 +1,148 @@
+<!-- templates/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Phone Price Predictor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding-top: 3rem; background:#f7fafc; }
+    .card { border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .result { font-weight: 700; font-size: 1.25rem; }
+    label { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-9 col-lg-7">
+        <div class="card p-4">
+          <h2 class="mb-1">Phone Price Predictor</h2>
+          <p class="text-muted mb-3">Enter phone specs and click <strong>Predict</strong>.</p>
+
+          {% if error %}
+            <div class="alert alert-danger" role="alert">{{ error }}</div>
+          {% endif %}
+
+          <form method="post" novalidate>
+            <div class="row g-3">
+              <div class="col-6">
+                <label for="ram">RAM (GB)</label>
+                <input type="number" step="1" min="0" class="form-control" id="ram" name="ram" value="{{ inputs.ram|default('') }}">
+              </div>
+              <div class="col-6">
+                <label for="storage">Storage (GB)</label>
+                <input type="number" step="1" min="0" class="form-control" id="storage" name="storage" value="{{ inputs.storage|default('') }}">
+              </div>
+
+              <div class="col-6">
+                <label for="battery_mAh">Battery (mAh)</label>
+                <input type="number" step="1" min="0" class="form-control" id="battery_mAh" name="battery_mAh" value="{{ inputs.battery_mAh|default('') }}">
+              </div>
+              <div class="col-6">
+                <label for="charging_watt">Charging rate (W)</label>
+                <input type="number" step="1" min="0" class="form-control" id="charging_watt" name="charging_watt" value="{{ inputs.charging_watt|default('') }}">
+              </div>
+
+              <div class="col-6">
+                <label for="display_size">Display size (inches)</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="display_size" name="display_size" value="{{ inputs.display_size|default('') }}">
+              </div>
+              <div class="col-6">
+                <label for="refresh_rate">Refresh rate (Hz)</label>
+                <input type="number" step="1" min="0" class="form-control" id="refresh_rate" name="refresh_rate" value="{{ inputs.refresh_rate|default('') }}">
+              </div>
+
+              <div class="col-6">
+                <label for="rear_camera">Rear camera (MP)</label>
+                <input type="number" step="1" min="0" class="form-control" id="rear_camera" name="rear_camera" value="{{ inputs.rear_camera|default('') }}">
+              </div>
+
+              <div class="col-6">
+                <label for="brand">Brand</label>
+                <select id="brand" name="brand" class="form-select" required onchange="toggleOtherBrand()">
+                    <option value="samsung"   {% if inputs.brand|default('')|lower == 'samsung'   %}selected{% endif %}>Samsung</option>
+                    <option value="xiaomi"    {% if inputs.brand|default('')|lower == 'xiaomi'    %}selected{% endif %}>Xiaomi</option>
+                    <option value="oneplus"   {% if inputs.brand|default('')|lower == 'oneplus'   %}selected{% endif %}>OnePlus</option>
+                    <option value="oppo"      {% if inputs.brand|default('')|lower == 'oppo'      %}selected{% endif %}>OPPO</option>
+                    <option value="vivo"      {% if inputs.brand|default('')|lower == 'vivo'      %}selected{% endif %}>Vivo</option>
+                    <option value="realme"    {% if inputs.brand|default('')|lower == 'realme'    %}selected{% endif %}>Realme</option>
+                    <option value="google"    {% if inputs.brand|default('')|lower == 'google'    %}selected{% endif %}>Google</option>
+                    <option value="motorola"  {% if inputs.brand|default('')|lower == 'motorola'  %}selected{% endif %}>Motorola</option>
+                    <option value="poco"      {% if inputs.brand|default('')|lower == 'poco'      %}selected{% endif %}>Poco</option>
+                    <option value="tecno"     {% if inputs.brand|default('')|lower == 'tecno'     %}selected{% endif %}>Tecno</option>
+                    <option value="iqoo"      {% if inputs.brand|default('')|lower == 'iqoo'      %}selected{% endif %}>IQOO</option>
+                    <option value="others"    {% if inputs.brand|default('')|lower not in [
+                                              'samsung','xiaomi','oneplus','oppo','vivo','realme','google','motorola','poco','tecno','iqoo'
+                                              ] %}selected{% endif %}>Others</option>
+                </select>
+
+                <!-- visible only when Others is selected; users can type a custom brand -->
+                <div id="other-brand-row" class="mt-2" style="display: none;">
+                  <input type="text" name="other_brand" id="other_brand" class="form-control" placeholder="Type brand (e.g. 'itel')" value="{{ inputs.other_brand|default('') }}">
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+              <button class="btn btn-primary" type="submit">Predict</button>
+              <button type="reset" class="btn btn-outline-secondary" onclick="resetAndHideOther()">Reset</button>
+            </div>
+          </form>
+
+          <hr class="my-4">
+
+          {% if result %}
+            <div class="alert alert-success">
+              <div>Predicted price: <span class="result">{{ result.predicted_price }}</span></div>
+              <div class="small text-muted">Rounded to 2 decimals</div>
+            </div>
+          {% endif %}
+
+          <div class="mt-3">
+            <small class="text-muted">Programmatic API: POST JSON to <code>/predict_json</code>.</small>
+          </div>
+        </div>
+
+        <div class="text-center mt-3 small text-muted">
+          <em><strong>This model can predict price of budget smartphones only (under INR 50,000). 
+            It cannot predict prices of premium flagship smartphones such as iPhone.</strong></em>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    function toggleOtherBrand() {
+      const sel = document.getElementById('brand');
+      const otherRow = document.getElementById('other-brand-row');
+      if (!sel) return;
+      if (sel.value && sel.value.toLowerCase() === 'others') {
+        otherRow.style.display = 'block';
+      } else {
+        otherRow.style.display = 'none';
+      }
+    }
+
+    // Called on form reset button click to hide the other-brand field
+    function resetAndHideOther() {
+      // short delay to allow the native reset to apply values first
+      setTimeout(() => {
+        toggleOtherBrand();
+        // clear the other_brand input as well
+        const otherInput = document.getElementById('other_brand');
+        if (otherInput) otherInput.value = '';
+      }, 10);
+    }
+
+    // Ensure correct show/hide when page loads (e.g. after POST)
+    document.addEventListener('DOMContentLoaded', function() {
+      toggleOtherBrand();
+    });
+  </script>
+</body>
+</html>
